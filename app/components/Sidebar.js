@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   LayoutDashboard, 
@@ -10,14 +10,14 @@ import {
   AlertTriangle, 
   Users, 
   BarChart3, 
-  Settings,
   Menu,
   X,
   ChefHat,
   Truck,
-  UserCircle
+  LogOut
 } from 'lucide-react'
 import { useInventory } from '../context/InventoryContext'
+import { useAuth } from '../context/AuthContext'
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -30,8 +30,10 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const [isMobileOpen, setIsMobileOpen] = useState(false)
-  const { getLowStockItems, getExpiringItems, currentUser, isLoaded } = useInventory()
+  const { getLowStockItems, getExpiringItems, isLoaded } = useInventory()
+  const { currentUser, signOut, isAuthenticated } = useAuth()
 
   // Calculate alert count
   const alertCount = isLoaded 
@@ -54,6 +56,12 @@ export default function Sidebar() {
       document.body.style.overflow = 'unset'
     }
   }, [isMobileOpen])
+
+  const handleSignOut = () => {
+    signOut()
+    // AuthWrapper will handle the redirect to /login
+    window.location.href = '/login'
+  }
 
   const NavLink = ({ item }) => {
     const isActive = pathname === item.href
@@ -108,7 +116,7 @@ export default function Sidebar() {
       </div>
 
       {/* Current User */}
-      {isLoaded && currentUser && (
+      {isAuthenticated && currentUser && (
         <div className="px-4 py-3 border-b border-sage-200">
           <Link href="/users">
             <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-sage-100 transition-colors">
@@ -130,6 +138,23 @@ export default function Sidebar() {
           <NavLink key={item.href} item={item} />
         ))}
       </nav>
+
+      {/* Sign Out Button */}
+      {isAuthenticated && (
+        <div className="p-4 border-t border-sage-200">
+          <button
+            onClick={handleSignOut}
+            className="
+              w-full flex items-center gap-3 px-4 py-3 rounded-xl
+              text-sage-600 hover:bg-red-50 hover:text-red-600
+              transition-all duration-200 group
+            "
+          >
+            <LogOut className="w-5 h-5 text-sage-400 group-hover:text-red-500" />
+            <span className="font-medium">Sign Out</span>
+          </button>
+        </div>
+      )}
 
       {/* Footer */}
       <div className="p-4 border-t border-sage-200">

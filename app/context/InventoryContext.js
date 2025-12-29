@@ -73,6 +73,7 @@ const defaultUsers = [
     id: 'admin-1', 
     name: 'Business Owner', 
     email: 'owner@foodstock.com', 
+    password: 'admin123',
     role: 'admin', 
     avatar: null,
     createdAt: new Date().toISOString(),
@@ -180,6 +181,7 @@ export function InventoryProvider({ children }) {
     const newUser = {
       ...userData,
       id: uuidv4(),
+      password: userData.password || 'password123', // Default password for new users
       createdAt: new Date().toISOString(),
       isActive: true
     }
