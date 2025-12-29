@@ -1,53 +1,66 @@
-# 🍽️ FoodStock - Restaurant & Food Truck Inventory Management
+# 🍳 FoodStock - Restaurant Inventory Management System
 
-A beautiful, modern, and responsive inventory management system designed specifically for restaurants and food trucks. Built with Next.js and featuring a stunning UI that works seamlessly on phones, tablets, and laptops.
+A modern, responsive inventory management system built for restaurants and food trucks. Manage your stock, track expiration dates, and never run out of essential ingredients.
 
-![FoodStock Preview](preview.png)
+![FoodStock](https://img.shields.io/badge/Next.js-14-black) ![Tailwind](https://img.shields.io/badge/Tailwind-3.4-blue) ![License](https://img.shields.io/badge/License-MIT-green)
 
 ## ✨ Features
 
 ### 📊 Dashboard
-- Real-time inventory overview
-- Visual charts for category distribution
-- Quick stats (total items, inventory value, alerts)
-- Low stock and expiration warnings at a glance
+- Real-time inventory overview with key stats
+- Interactive charts for category distribution
+- Low stock and expiring items at a glance
+- Quick action buttons for common tasks
 
 ### 📦 Inventory Management
-- Add, edit, and delete inventory items
-- Track quantities with quick +/- adjustments
-- Organize items by categories (Proteins, Vegetables, Dairy, etc.)
-- Set minimum stock levels for automatic alerts
-- Track expiration dates for perishable items
-- Link items to suppliers for easy reordering
+- Full CRUD operations (Add, Edit, Delete items)
+- **📷 Camera capture** - Take photos of products directly
+- **📱 Barcode/QR scanning** - Scan product barcodes with your camera
+- Quick +/- buttons to adjust quantities
+- Search and filter by category
+- Tracks: name, category, quantity, unit, cost, expiration, supplier
+
+### 📦 Enhanced Units System
+- **Container units**: Cases, Cans, Boxes, Bottles, Jars, Cartons, etc.
+- **Weight units**: Pounds, Kilograms, Ounces, Grams
+- **Volume units**: Gallons, Liters, Quarts, Cups
+- **Bulk packs**: 6-pack, 12-pack, 24-pack, #10 cans
+- **Case tracking**: Track cases with units per case (e.g., 24 cans per case)
+
+### 👥 Multi-User Support
+- Add multiple team members
+- Role-based access (Admin, Manager, Staff)
+- User management dashboard
+- Activity tracking per user
 
 ### ⚠️ Smart Alerts
-- Low stock notifications
-- Expiring soon warnings (7 days)
-- Expired item alerts
-- Filterable alert views
+- Low Stock warnings
+- Expiring Soon alerts (within 7 days)
+- Expired items tracking
+- Badge counter in navigation
 
 ### 👥 Supplier Management
-- Store supplier contact information
-- Track which items come from each supplier
-- Quick access to phone and email
+- Store supplier contacts
+- Track delivery schedules
+- Link items to suppliers
 
 ### 📈 Reports & Analytics
 - Stock health overview
-- Category breakdown with values
-- Supplier analysis
+- Value by category breakdown
 - Top items by value
-- Visual charts and graphs
+- Supplier analysis
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 - Node.js 18+ installed
-- npm or yarn package manager
+- npm or yarn
 
 ### Installation
 
-1. Navigate to the project directory:
+1. Clone the repository:
 ```bash
+git clone https://github.com/dv0331/FoodStock.git
 cd FoodStock
 ```
 
@@ -61,28 +74,28 @@ npm install
 npm run dev
 ```
 
-4. Open your browser and visit:
-```
-http://localhost:3000
-```
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-## 📱 Responsive Design
+## 📱 Mobile Features
 
-FoodStock is fully responsive and works great on:
-- 📱 Mobile phones
+The app is fully responsive and works on:
+- 📱 Mobile phones (with hamburger menu)
 - 📱 Tablets
 - 💻 Laptops and desktops
 
-## 🎨 Tech Stack
+### Camera & Scanner
+- **Take Photos**: Capture product images using your device camera
+- **Scan Barcodes**: Use your camera to scan product barcodes
+- **Manual Entry**: Enter barcodes manually if scanning isn't available
 
-- **Framework:** Next.js 14
-- **Styling:** Tailwind CSS
-- **Charts:** Recharts
-- **Animations:** Framer Motion
-- **Icons:** Lucide React
-- **Date Handling:** date-fns
-- **State Management:** React Context API
-- **Storage:** LocalStorage (persists data locally)
+## 🛠️ Tech Stack
+
+- **Frontend**: Next.js 14, React 18
+- **Styling**: Tailwind CSS, Framer Motion
+- **Charts**: Recharts
+- **Icons**: Lucide React
+- **Barcode Scanning**: html5-qrcode
+- **Storage**: LocalStorage (persistent)
 
 ## 📁 Project Structure
 
@@ -90,70 +103,48 @@ FoodStock is fully responsive and works great on:
 FoodStock/
 ├── app/
 │   ├── components/
-│   │   ├── ui/           # Reusable UI components
-│   │   ├── PageWrapper.js
-│   │   └── Sidebar.js
+│   │   ├── ui/
+│   │   │   ├── Button.js
+│   │   │   ├── Card.js
+│   │   │   ├── Modal.js
+│   │   │   ├── Input.js
+│   │   │   ├── Select.js
+│   │   │   ├── CameraCapture.js
+│   │   │   └── BarcodeScanner.js
+│   │   ├── Sidebar.js
+│   │   └── PageWrapper.js
 │   ├── context/
 │   │   └── InventoryContext.js
-│   ├── alerts/
-│   │   └── page.js
-│   ├── inventory/
-│   │   └── page.js
-│   ├── reports/
-│   │   └── page.js
-│   ├── suppliers/
-│   │   └── page.js
-│   ├── globals.css
+│   ├── alerts/page.js
+│   ├── inventory/page.js
+│   ├── reports/page.js
+│   ├── suppliers/page.js
+│   ├── users/page.js
 │   ├── layout.js
-│   └── page.js
-├── package.json
+│   ├── page.js
+│   └── globals.css
+├── public/
 ├── tailwind.config.js
-└── README.md
+├── next.config.js
+└── package.json
 ```
 
-## 💡 Usage Tips
+## 🎨 Design Features
 
-### Adding Inventory Items
-1. Go to the Inventory page
-2. Click "Add Item"
-3. Fill in the details:
-   - Item name
-   - Category
-   - Quantity and unit
-   - Minimum stock level (for alerts)
-   - Cost per unit
-   - Expiration date (for perishables)
-   - Supplier (optional)
+- Modern sage green & orange color scheme
+- Smooth animations and transitions
+- Glassmorphism effects
+- Food-related emojis for categories
+- Beautiful charts and visualizations
 
-### Managing Stock Levels
-- Use the +/- buttons on each item for quick adjustments
-- Items below minimum stock will trigger low stock alerts
+## 📝 License
 
-### Setting Up Suppliers
-1. Go to the Suppliers page
-2. Add your vendors with contact information
-3. Link inventory items to suppliers when adding/editing
+MIT License - feel free to use this project for your restaurant or food truck!
 
-### Monitoring Alerts
-- The sidebar shows a badge with active alert count
-- Check the Alerts page for detailed information
-- Filter by alert type (Low Stock, Expiring, Expired)
+## 🤝 Contributing
 
-## 🔒 Data Storage
-
-All data is stored locally in your browser using LocalStorage. Your inventory data persists across sessions but is specific to your browser/device.
-
-**Note:** Clearing browser data will reset all inventory information.
-
-## 📄 License
-
-This project is open source and available under the MIT License.
-
-## 🤝 Support
-
-For issues, questions, or suggestions, please open an issue in the repository.
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ---
 
-Made with ❤️ for the food service industry
-
+Made with ❤️ for restaurant and food truck owners

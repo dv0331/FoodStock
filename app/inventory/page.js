@@ -12,7 +12,11 @@ import {
   ChevronDown,
   AlertTriangle,
   Clock,
-  Minus
+  Minus,
+  Camera,
+  Scan,
+  Image as ImageIcon,
+  X
 } from 'lucide-react'
 import PageWrapper from '../components/PageWrapper'
 import Card from '../components/ui/Card'
@@ -21,6 +25,8 @@ import Modal from '../components/ui/Modal'
 import Input from '../components/ui/Input'
 import Select from '../components/ui/Select'
 import EmptyState from '../components/ui/EmptyState'
+import CameraCapture from '../components/ui/CameraCapture'
+import BarcodeScanner from '../components/ui/BarcodeScanner'
 import { useInventory } from '../context/InventoryContext'
 import { format, differenceInDays } from 'date-fns'
 
@@ -29,10 +35,12 @@ function InventoryContent() {
     inventory, 
     categories, 
     suppliers,
+    units,
     addItem, 
     updateItem, 
     deleteItem,
     adjustQuantity,
+    findItemByBarcode,
     isLoaded 
   } = useInventory()
 
@@ -41,7 +49,10 @@ function InventoryContent() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false)
+  const [isScannerModalOpen, setIsScannerModalOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState(null)
+  const [scannedBarcode, setScannedBarcode] = useState('')
   const [formData, setFormData] = useState({
     name: '',
     category: '',
@@ -50,35 +61,64 @@ function InventoryContent() {
     minStock: '',
     costPerUnit: '',
     expirationDate: '',
-    supplier: ''
+    supplier: '',
+    image: null,
+    barcode: '',
+    // Case/pack information
+    isCaseItem: false,
+    unitsPerCase: ''
   })
 
-  const unitOptions = [
-    { value: 'pcs', label: 'Pieces' },
-    { value: 'lbs', label: 'Pounds (lbs)' },
-    { value: 'kg', label: 'Kilograms (kg)' },
-    { value: 'oz', label: 'Ounces (oz)' },
-    { value: 'gal', label: 'Gallons' },
-    { value: 'l', label: 'Liters' },
-    { value: 'cases', label: 'Cases' },
-    { value: 'bags', label: 'Bags' },
-    { value: 'heads', label: 'Heads' },
-    { value: 'bottles', label: 'Bottles' },
-    { value: 'cans', label: 'Cans' },
-  ]
+  // Group units by category for better organization
+  const groupedUnits = useMemo(() => {
+    const groups = {}
+    units.forEach(unit => {
+      if (!groups[unit.category]) {
+        groups[unit.category] = []
+      }
+      groups[unit.category].push(unit)
+    })
+    return groups
+  }, [units])
+
+  const unitOptions = useMemo(() => {
+    const options = []
+    const categoryLabels = {
+      individual: '📦 Individual',
+      weight: '⚖️ Weight',
+      volume: '🫗 Volume',
+      container: '📦 Containers',
+      produce: '🥬 Produce',
+      bakery: '🍞 Bakery',
+      bulk: '📦 Bulk Packs'
+    }
+    
+    Object.entries(groupedUnits).forEach(([cat, unitList]) => {
+      // Add separator/group header
+      options.push({ value: `__${cat}`, label: categoryLabels[cat] || cat, disabled: true })
+      unitList.forEach(u => {
+        options.push({ value: u.value, label: u.label })
+      })
+    })
+    return options
+  }, [groupedUnits])
 
   // Filter inventory
   const filteredInventory = useMemo(() => {
     return inventory.filter(item => {
-      const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           (item.barcode && item.barcode.includes(searchTerm))
       const matchesCategory = !categoryFilter || item.category === categoryFilter
       return matchesSearch && matchesCategory
     })
   }, [inventory, searchTerm, categoryFilter])
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+    const { name, value, type, checked } = e.target
+    setFormData(prev => ({ 
+      ...prev, 
+      [name]: type === 'checkbox' ? checked : value 
+    }))
   }
 
   const resetForm = () => {
@@ -90,8 +130,13 @@ function InventoryContent() {
       minStock: '',
       costPerUnit: '',
       expirationDate: '',
-      supplier: ''
+      supplier: '',
+      image: null,
+      barcode: '',
+      isCaseItem: false,
+      unitsPerCase: ''
     })
+    setScannedBarcode('')
   }
 
   const handleAddItem = (e) => {
@@ -101,6 +146,10 @@ function InventoryContent() {
       quantity: parseFloat(formData.quantity) || 0,
       minStock: parseFloat(formData.minStock) || 0,
       costPerUnit: parseFloat(formData.costPerUnit) || 0,
+      caseInfo: formData.isCaseItem ? {
+        isCaseItem: true,
+        unitsPerCase: parseInt(formData.unitsPerCase) || 1
+      } : null
     })
     resetForm()
     setIsAddModalOpen(false)
@@ -113,6 +162,10 @@ function InventoryContent() {
       quantity: parseFloat(formData.quantity) || 0,
       minStock: parseFloat(formData.minStock) || 0,
       costPerUnit: parseFloat(formData.costPerUnit) || 0,
+      caseInfo: formData.isCaseItem ? {
+        isCaseItem: true,
+        unitsPerCase: parseInt(formData.unitsPerCase) || 1
+      } : null
     })
     resetForm()
     setIsEditModalOpen(false)
@@ -135,7 +188,11 @@ function InventoryContent() {
       minStock: item.minStock.toString(),
       costPerUnit: item.costPerUnit.toString(),
       expirationDate: item.expirationDate || '',
-      supplier: item.supplier || ''
+      supplier: item.supplier || '',
+      image: item.image || null,
+      barcode: item.barcode || '',
+      isCaseItem: item.caseInfo?.isCaseItem || false,
+      unitsPerCase: item.caseInfo?.unitsPerCase?.toString() || ''
     })
     setIsEditModalOpen(true)
   }
@@ -143,6 +200,26 @@ function InventoryContent() {
   const openDeleteModal = (item) => {
     setSelectedItem(item)
     setIsDeleteModalOpen(true)
+  }
+
+  const handleImageCapture = (imageData) => {
+    setFormData(prev => ({ ...prev, image: imageData }))
+    setIsCameraModalOpen(false)
+  }
+
+  const handleBarcodeScan = (barcode) => {
+    setScannedBarcode(barcode)
+    setFormData(prev => ({ ...prev, barcode }))
+    
+    // Check if item exists with this barcode
+    const existingItem = findItemByBarcode(barcode)
+    if (existingItem) {
+      // Open edit modal for existing item
+      openEditModal(existingItem)
+      setIsScannerModalOpen(false)
+    } else {
+      setIsScannerModalOpen(false)
+    }
   }
 
   const getItemStatus = (item) => {
@@ -168,12 +245,68 @@ function InventoryContent() {
 
   const ItemForm = ({ onSubmit, submitLabel }) => (
     <form onSubmit={onSubmit} className="space-y-4">
+      {/* Image Section */}
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-sage-700">Product Image</label>
+        <div className="flex items-center gap-4">
+          {formData.image ? (
+            <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-sage-100">
+              <img src={formData.image} alt="Product" className="w-full h-full object-cover" />
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, image: null }))}
+                className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ) : (
+            <div className="w-20 h-20 rounded-lg bg-sage-100 flex items-center justify-center">
+              <ImageIcon className="w-8 h-8 text-sage-400" />
+            </div>
+          )}
+          <Button 
+            type="button" 
+            variant="secondary" 
+            size="sm"
+            icon={Camera}
+            onClick={() => setIsCameraModalOpen(true)}
+          >
+            {formData.image ? 'Change' : 'Add Photo'}
+          </Button>
+        </div>
+      </div>
+
+      {/* Barcode Section */}
+      <div className="flex gap-2">
+        <div className="flex-1">
+          <Input
+            label="Barcode / SKU"
+            name="barcode"
+            value={formData.barcode}
+            onChange={handleInputChange}
+            placeholder="Scan or enter barcode"
+            icon={Scan}
+          />
+        </div>
+        <div className="pt-7">
+          <Button 
+            type="button" 
+            variant="secondary"
+            icon={Scan}
+            onClick={() => setIsScannerModalOpen(true)}
+          >
+            Scan
+          </Button>
+        </div>
+      </div>
+
       <Input
         label="Item Name"
         name="name"
         value={formData.name}
         onChange={handleInputChange}
-        placeholder="e.g., Ground Beef"
+        placeholder="e.g., Ground Beef, Mushrooms"
         required
       />
       
@@ -214,7 +347,7 @@ function InventoryContent() {
           name="unit"
           value={formData.unit}
           onChange={handleInputChange}
-          options={unitOptions}
+          options={units.map(u => ({ value: u.value, label: u.label }))}
           required
         />
         <Input
@@ -228,6 +361,38 @@ function InventoryContent() {
           placeholder="0"
           required
         />
+      </div>
+
+      {/* Case/Pack Information */}
+      <div className="p-4 rounded-lg bg-sage-50 border border-sage-200 space-y-3">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            name="isCaseItem"
+            checked={formData.isCaseItem}
+            onChange={handleInputChange}
+            className="w-4 h-4 text-brand-500 rounded focus:ring-brand-500"
+          />
+          <span className="text-sm font-medium text-sage-700">
+            This item comes in cases/packs
+          </span>
+        </label>
+        
+        {formData.isCaseItem && (
+          <Input
+            label="Units per Case/Pack"
+            name="unitsPerCase"
+            type="number"
+            min="1"
+            value={formData.unitsPerCase}
+            onChange={handleInputChange}
+            placeholder="e.g., 24 (for 24 cans per case)"
+          />
+        )}
+        
+        <p className="text-xs text-sage-500">
+          Example: A case of mushrooms with 24 cans. Enter quantity as number of cases.
+        </p>
       </div>
       
       <div className="grid grid-cols-2 gap-4">
@@ -267,9 +432,14 @@ function InventoryContent() {
           <h1 className="font-display text-3xl font-bold text-sage-900">Inventory</h1>
           <p className="text-sage-500 mt-1">Manage your stock items</p>
         </div>
-        <Button icon={Plus} onClick={() => setIsAddModalOpen(true)}>
-          Add Item
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" icon={Scan} onClick={() => setIsScannerModalOpen(true)}>
+            Scan
+          </Button>
+          <Button icon={Plus} onClick={() => setIsAddModalOpen(true)}>
+            Add Item
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -278,7 +448,7 @@ function InventoryContent() {
           <div className="flex-1">
             <Input
               icon={Search}
-              placeholder="Search items..."
+              placeholder="Search items or barcodes..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -348,11 +518,16 @@ function InventoryContent() {
                       >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <span className="text-2xl">{category?.icon || '📦'}</span>
+                            {item.image ? (
+                              <img src={item.image} alt={item.name} className="w-10 h-10 rounded-lg object-cover" />
+                            ) : (
+                              <span className="text-2xl">{category?.icon || '📦'}</span>
+                            )}
                             <div>
                               <p className="font-medium text-sage-900">{item.name}</p>
                               <p className="text-sm text-sage-500">
                                 ${item.costPerUnit.toFixed(2)}/{item.unit}
+                                {item.barcode && <span className="ml-2 text-sage-400">#{item.barcode}</span>}
                               </p>
                             </div>
                           </div>
@@ -380,6 +555,11 @@ function InventoryContent() {
                               <Plus className="w-4 h-4 text-sage-600" />
                             </button>
                           </div>
+                          {item.caseInfo?.isCaseItem && (
+                            <p className="text-xs text-sage-500 mt-1">
+                              ({item.quantity * item.caseInfo.unitsPerCase} total units)
+                            </p>
+                          )}
                         </td>
                         <td className="px-6 py-4">
                           <p className="font-medium text-sage-900">
@@ -462,10 +642,17 @@ function InventoryContent() {
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <span className="text-3xl">{category?.icon || '📦'}</span>
+                      {item.image ? (
+                        <img src={item.image} alt={item.name} className="w-12 h-12 rounded-lg object-cover" />
+                      ) : (
+                        <span className="text-3xl">{category?.icon || '📦'}</span>
+                      )}
                       <div>
                         <p className="font-semibold text-sage-900">{item.name}</p>
                         <p className="text-sm text-sage-500">{category?.name}</p>
+                        {item.barcode && (
+                          <p className="text-xs text-sage-400">#{item.barcode}</p>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
@@ -504,6 +691,11 @@ function InventoryContent() {
                           <Plus className="w-4 h-4" />
                         </button>
                       </div>
+                      {item.caseInfo?.isCaseItem && (
+                        <p className="text-xs text-sage-500 mt-1">
+                          ({item.quantity * item.caseInfo.unitsPerCase} total units)
+                        </p>
+                      )}
                     </div>
                     <div>
                       <p className="text-xs text-sage-500 uppercase">Total Value</p>
@@ -598,6 +790,33 @@ function InventoryContent() {
           </div>
         </div>
       </Modal>
+
+      {/* Camera Modal */}
+      <Modal
+        isOpen={isCameraModalOpen}
+        onClose={() => setIsCameraModalOpen(false)}
+        title="Add Product Photo"
+        size="md"
+      >
+        <CameraCapture 
+          onCapture={handleImageCapture}
+          onClose={() => setIsCameraModalOpen(false)}
+          currentImage={formData.image}
+        />
+      </Modal>
+
+      {/* Barcode Scanner Modal */}
+      <Modal
+        isOpen={isScannerModalOpen}
+        onClose={() => setIsScannerModalOpen(false)}
+        title="Scan Barcode"
+        size="md"
+      >
+        <BarcodeScanner 
+          onScan={handleBarcodeScan}
+          onClose={() => setIsScannerModalOpen(false)}
+        />
+      </Modal>
     </div>
   )
 }
@@ -609,4 +828,3 @@ export default function InventoryPage() {
     </PageWrapper>
   )
 }
-

@@ -13,7 +13,9 @@ import {
   Settings,
   Menu,
   X,
-  ChefHat
+  ChefHat,
+  Truck,
+  UserCircle
 } from 'lucide-react'
 import { useInventory } from '../context/InventoryContext'
 
@@ -21,14 +23,15 @@ const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/inventory', label: 'Inventory', icon: Package },
   { href: '/alerts', label: 'Alerts', icon: AlertTriangle },
-  { href: '/suppliers', label: 'Suppliers', icon: Users },
+  { href: '/suppliers', label: 'Suppliers', icon: Truck },
+  { href: '/users', label: 'Team', icon: Users },
   { href: '/reports', label: 'Reports', icon: BarChart3 },
 ]
 
 export default function Sidebar() {
   const pathname = usePathname()
   const [isMobileOpen, setIsMobileOpen] = useState(false)
-  const { getLowStockItems, getExpiringItems, isLoaded } = useInventory()
+  const { getLowStockItems, getExpiringItems, currentUser, isLoaded } = useInventory()
 
   // Calculate alert count
   const alertCount = isLoaded 
@@ -103,6 +106,23 @@ export default function Sidebar() {
           </div>
         </Link>
       </div>
+
+      {/* Current User */}
+      {isLoaded && currentUser && (
+        <div className="px-4 py-3 border-b border-sage-200">
+          <Link href="/users">
+            <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-sage-100 transition-colors">
+              <div className="w-8 h-8 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-sm font-semibold">
+                {currentUser.avatar || currentUser.name?.charAt(0)?.toUpperCase() || 'U'}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-sage-900 truncate">{currentUser.name}</p>
+                <p className="text-xs text-sage-500 capitalize">{currentUser.role}</p>
+              </div>
+            </div>
+          </Link>
+        </div>
+      )}
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-2">
@@ -182,4 +202,3 @@ export default function Sidebar() {
     </>
   )
 }
-
