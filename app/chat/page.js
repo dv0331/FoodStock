@@ -15,7 +15,9 @@ import {
   CheckCircle,
   X,
   Edit2,
-  Sparkles
+  Sparkles,
+  Calendar,
+  Clock
 } from 'lucide-react'
 import PageWrapper from '../components/PageWrapper'
 import Card from '../components/ui/Card'
@@ -26,7 +28,7 @@ import { useAuth } from '../context/AuthContext'
 
 function ChatContent() {
   const { items, addItem, getLowStockItems, getExpiringItems } = useInventory()
-  const { employees, positions, addEmployee } = useEmployee()
+  const { employees, positions, addEmployee, addSchedule, getPositionById } = useEmployee()
   const { currentUser } = useAuth()
 
   const [messages, setMessages] = useState([
@@ -193,6 +195,21 @@ Current inventory status:
           content: `✅ **Employee added!**\n\n${pendingAction.data.name} has been added as a ${pendingAction.data.position} (${pendingAction.data.role}).`,
           timestamp: new Date()
         }])
+      } else if (pendingAction.action === 'add_shift') {
+        const position = getPositionById(pendingAction.data.position)
+        const employee = employees.find(e => e.id === pendingAction.data.employeeId)
+        
+        addSchedule({
+          ...pendingAction.data,
+          tasks: pendingAction.data.tasks || [],
+        })
+        
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: `✅ **Shift scheduled!**\n\n${employee?.name || 'Employee'} has been scheduled for ${position?.name || pendingAction.data.position} on ${pendingAction.data.date} from ${pendingAction.data.startTime} to ${pendingAction.data.endTime}.`,
+          timestamp: new Date()
+        }])
       }
     } catch (error) {
       setMessages(prev => [...prev, {
@@ -227,6 +244,8 @@ Current inventory status:
     { label: 'Add Inventory', icon: Package, prompt: 'I want to add new inventory items' },
     { label: 'Add Employee', icon: Users, prompt: 'I need to add a new employee' },
     { label: 'Check Low Stock', icon: AlertTriangle, prompt: 'What items are running low?' },
+    { label: 'Schedule Help', icon: Calendar, prompt: 'Help me with scheduling employees' },
+    { label: 'Hours & Timesheet', icon: Clock, prompt: 'How do I track employee hours?' },
   ]
 
   return (
@@ -302,15 +321,21 @@ Current inventory status:
                         <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
                           {message.action.action === 'add_inventory' ? (
                             <><Package className="w-4 h-4" /> New Inventory Item</>
-                          ) : (
+                          ) : message.action.action === 'add_employee' ? (
                             <><Users className="w-4 h-4" /> New Employee</>
+                          ) : message.action.action === 'add_shift' ? (
+                            <><Calendar className="w-4 h-4" /> New Shift</>
+                          ) : (
+                            <><Plus className="w-4 h-4" /> Action</>
                           )}
                         </h4>
                         <div className="text-xs space-y-1 text-sage-600">
                           {Object.entries(message.action.data).map(([key, value]) => (
                             <div key={key} className="flex justify-between">
                               <span className="capitalize">{key}:</span>
-                              <span className="font-medium text-sage-900">{value}</span>
+                              <span className="font-medium text-sage-900">
+                                {Array.isArray(value) ? value.join(', ') : String(value)}
+                              </span>
                             </div>
                           ))}
                         </div>

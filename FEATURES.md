@@ -43,13 +43,15 @@
 ## ✅ Recently Completed Features
 
 ### Employee Management & Scheduling
-- [x] Employee profiles with positions (Kitchen, Front Desk, etc.)
+- [x] Employee profiles with 16+ positions (Kitchen, Front Desk, Dishwashing, Meal Prep, Restocking, etc.)
 - [x] Clock in/out system with timestamps
 - [x] Timesheet tracking (hours worked)
 - [x] Manager approval for clock-in
-- [x] Weekly availability submission
-- [x] Schedule allocation by business owner
-- [x] AI-powered schedule generation
+- [x] Weekly availability submission (employees submit every weekend)
+- [x] Schedule allocation by business owner with task descriptions
+- [x] AI-powered schedule generation with OpenAI
+- [x] Shift tasks and custom instructions
+- [x] Review & edit AI-generated schedules before applying
 
 ### AI Chat Assistant
 - [x] Chat interface for all users

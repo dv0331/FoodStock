@@ -5,17 +5,45 @@ import { v4 as uuidv4 } from 'uuid'
 
 const EmployeeContext = createContext()
 
-// Work positions/stations
+// Work positions/stations - expanded with more restaurant areas
 const defaultPositions = [
-  { id: 'kitchen', name: 'Kitchen', icon: '👨‍🍳', color: '#ef4444' },
-  { id: 'front-desk', name: 'Front Desk', icon: '🎫', color: '#3b82f6' },
-  { id: 'server', name: 'Server', icon: '🍽️', color: '#22c55e' },
-  { id: 'cashier', name: 'Cashier', icon: '💰', color: '#f59e0b' },
-  { id: 'prep', name: 'Prep Cook', icon: '🥗', color: '#8b5cf6' },
-  { id: 'dishwasher', name: 'Dishwasher', icon: '🧽', color: '#06b6d4' },
-  { id: 'manager', name: 'Manager', icon: '📋', color: '#ec4899' },
-  { id: 'delivery', name: 'Delivery', icon: '🚗', color: '#14b8a6' },
+  { id: 'kitchen', name: 'Kitchen/Line Cook', icon: '👨‍🍳', color: '#ef4444', description: 'Prepare and cook food orders' },
+  { id: 'front-desk', name: 'Front Desk/Host', icon: '🎫', color: '#3b82f6', description: 'Greet customers and manage reservations' },
+  { id: 'server', name: 'Server/Waiter', icon: '🍽️', color: '#22c55e', description: 'Take orders and serve customers' },
+  { id: 'cashier', name: 'Cashier', icon: '💰', color: '#f59e0b', description: 'Handle payments and transactions' },
+  { id: 'prep', name: 'Meal Prep/Prep Cook', icon: '🥗', color: '#8b5cf6', description: 'Prepare ingredients and mise en place' },
+  { id: 'dishwasher', name: 'Dishwashing', icon: '🧽', color: '#06b6d4', description: 'Clean dishes and maintain kitchen cleanliness' },
+  { id: 'manager', name: 'Manager/Supervisor', icon: '📋', color: '#ec4899', description: 'Oversee operations and staff' },
+  { id: 'delivery', name: 'Delivery Driver', icon: '🚗', color: '#14b8a6', description: 'Deliver food orders to customers' },
+  { id: 'restocking', name: 'Restocking/Inventory', icon: '📦', color: '#6366f1', description: 'Restock supplies and manage inventory' },
+  { id: 'cleaning', name: 'Cleaning/Sanitation', icon: '🧹', color: '#84cc16', description: 'Clean and sanitize restaurant areas' },
+  { id: 'barista', name: 'Barista/Drinks', icon: '☕', color: '#a855f7', description: 'Prepare beverages and drinks' },
+  { id: 'expeditor', name: 'Expeditor/Food Runner', icon: '🏃', color: '#f97316', description: 'Coordinate orders and run food to tables' },
+  { id: 'busser', name: 'Busser/Table Clear', icon: '🍽️', color: '#0ea5e9', description: 'Clear tables and assist servers' },
+  { id: 'grill', name: 'Grill Station', icon: '🔥', color: '#dc2626', description: 'Operate grill and cook grilled items' },
+  { id: 'fry', name: 'Fry Station', icon: '🍟', color: '#ca8a04', description: 'Operate fryer and cook fried items' },
+  { id: 'custom', name: 'Custom/Other', icon: '⭐', color: '#64748b', description: 'Custom position or special tasks' },
 ]
+
+// Common task templates for shifts
+const taskTemplates = {
+  kitchen: ['Cook food orders', 'Maintain food quality', 'Follow recipes', 'Keep station clean'],
+  'front-desk': ['Greet customers', 'Manage waitlist', 'Answer phone calls', 'Handle reservations'],
+  server: ['Take orders', 'Serve food', 'Check on tables', 'Process payments'],
+  cashier: ['Process payments', 'Handle cash', 'Answer questions', 'Manage receipts'],
+  prep: ['Prep vegetables', 'Portion ingredients', 'Stock prep area', 'Label and date items'],
+  dishwasher: ['Wash dishes', 'Clean kitchen', 'Take out trash', 'Restock clean dishes'],
+  manager: ['Supervise staff', 'Handle complaints', 'Check inventory', 'Close registers'],
+  delivery: ['Deliver orders', 'Verify orders', 'Handle payments', 'Maintain vehicle'],
+  restocking: ['Check inventory', 'Restock shelves', 'Organize storage', 'Report low items'],
+  cleaning: ['Clean dining area', 'Sanitize surfaces', 'Clean restrooms', 'Empty trash'],
+  barista: ['Make drinks', 'Clean machines', 'Restock supplies', 'Take drink orders'],
+  expeditor: ['Coordinate orders', 'Run food', 'Check order accuracy', 'Communicate with kitchen'],
+  busser: ['Clear tables', 'Reset tables', 'Refill water', 'Assist servers'],
+  grill: ['Grill meats', 'Monitor temperatures', 'Clean grill', 'Season items'],
+  fry: ['Fry items', 'Monitor oil', 'Bread items', 'Clean fryer'],
+  custom: ['Custom tasks as assigned'],
+}
 
 // Sample employees
 const sampleEmployees = [
@@ -85,6 +113,7 @@ export function EmployeeProvider({ children }) {
   const [schedules, setSchedules] = useState([])
   const [availabilities, setAvailabilities] = useState([])
   const [positions] = useState(defaultPositions)
+  const [tasks] = useState(taskTemplates)
   const [isLoaded, setIsLoaded] = useState(false)
 
   // Load data from localStorage
@@ -323,12 +352,40 @@ export function EmployeeProvider({ children }) {
     }
   }
 
+  // Bulk add schedules (for AI generation)
+  const bulkAddSchedules = (schedulesArray) => {
+    const newSchedules = schedulesArray.map(sched => ({
+      ...sched,
+      id: uuidv4(),
+      createdAt: new Date().toISOString()
+    }))
+    setSchedules(prev => [...prev, ...newSchedules])
+    return newSchedules
+  }
+
+  // Clear schedules for a week (for regeneration)
+  const clearWeekSchedules = (weekStartDate) => {
+    const weekEnd = new Date(weekStartDate)
+    weekEnd.setDate(weekEnd.getDate() + 7)
+    const weekEndStr = weekEnd.toISOString().split('T')[0]
+    
+    setSchedules(prev => 
+      prev.filter(sched => sched.date < weekStartDate || sched.date >= weekEndStr)
+    )
+  }
+
+  // Get task templates for a position
+  const getTasksForPosition = (positionId) => {
+    return tasks[positionId] || tasks.custom
+  }
+
   const value = {
     employees,
     timesheets,
     schedules,
     availabilities,
     positions,
+    tasks,
     isLoaded,
     // Employee operations
     addEmployee,
@@ -351,12 +408,15 @@ export function EmployeeProvider({ children }) {
     updateSchedule,
     deleteSchedule,
     getWeekSchedules,
+    bulkAddSchedules,
+    clearWeekSchedules,
     // Availability operations
     submitAvailability,
     getEmployeeAvailability,
     getAllAvailabilitiesForWeek,
     // Utilities
     getPositionById,
+    getTasksForPosition,
     getTodayStats,
   }
 
