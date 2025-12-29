@@ -14,7 +14,11 @@ import {
   X,
   ChefHat,
   Truck,
-  LogOut
+  LogOut,
+  Clock,
+  Calendar,
+  MessageSquare,
+  UserCog
 } from 'lucide-react'
 import { useInventory } from '../context/InventoryContext'
 import { useAuth } from '../context/AuthContext'
@@ -24,6 +28,10 @@ const navItems = [
   { href: '/inventory', label: 'Inventory', icon: Package },
   { href: '/alerts', label: 'Alerts', icon: AlertTriangle },
   { href: '/suppliers', label: 'Suppliers', icon: Truck },
+  { href: '/employees', label: 'Employees', icon: UserCog },
+  { href: '/schedule', label: 'Schedule', icon: Calendar },
+  { href: '/timesheet', label: 'Timesheet', icon: Clock },
+  { href: '/chat', label: 'AI Assistant', icon: MessageSquare },
   { href: '/users', label: 'Team', icon: Users },
   { href: '/reports', label: 'Reports', icon: BarChart3 },
 ]
